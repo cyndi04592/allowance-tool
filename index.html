@@ -579,7 +579,7 @@
         <td data-l="數量"><input data-f="qty" inputmode="decimal" value="${esc(r.qty)}" class="${r.auto==='qty'?'auto':''}" placeholder="${r.auto==='qty'?'自動':''}"></td>
         <td data-l="單價"><input data-f="price" inputmode="decimal" value="${esc(r.price)}" class="${r.auto==='price'?'auto':''}" placeholder="${r.auto==='price'?'自動':''}"></td>
         <td data-l="未稅金額"><input data-f="amt" inputmode="decimal" value="${esc(r.amt)}" class="${r.auto==='amt'||hasInc(r)?'auto':''}" placeholder="${r.auto==='amt'?'自動':''}"></td>
-        <td data-l="含稅金額（只知道總額就打這）"><input data-g="inc" inputmode="decimal" value="${esc(r.inc)}" placeholder="選填"><div class="inc-hint">${esc(incHint(r))}</div></td>
+        <td data-l="含稅金額（選填）"><input data-g="inc" inputmode="decimal" value="${esc(r.inc)}" placeholder="選填"><div class="inc-hint">${esc(incHint(r))}</div></td>
         <td data-l="課稅別" class="full"><select data-k="note">${['應稅','零稅率','免稅'].map(o=>`<option${r.note===o?' selected':''}>${o}</option>`).join('')}</select></td>
         <td class="delc"><button type="button" class="del" title="刪除這張">× 刪除</button></td>
       </tr>`).join('');
