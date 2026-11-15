@@ -153,6 +153,44 @@
   }
   @media (max-width:560px){.act{grid-template-columns:1fr}}
 
+
+  /* ===== 教學：浮動按鈕、側邊說明、帶做導覽 ===== */
+  #helpFab{position:fixed;right:18px;bottom:18px;z-index:60;background:#b8892b;color:#fff;border:none;border-radius:40px;padding:14px 22px;font:inherit;font-size:18px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:8px}
+  #helpFab:hover{background:#9c7322}
+  #helpNudge{position:fixed;right:18px;bottom:84px;z-index:60;background:#fff;color:var(--text);border:2px solid #b8892b;border-radius:14px;padding:12px 14px;max-width:270px;font-size:16px;box-shadow:0 6px 18px rgba(0,0,0,.18);display:none}
+  #helpNudge b{display:block;font-size:17px;margin-bottom:6px}
+  #helpNudge .row{display:flex;gap:8px;margin-top:8px}
+  #helpNudge button{flex:1;font:inherit;font-size:15px;padding:8px;border-radius:8px;cursor:pointer;border:1px solid var(--primary);background:#fff;color:var(--primary)}
+  #helpNudge button.y{background:var(--primary);color:#fff}
+
+  #helpMask{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70;display:none}
+  #helpDrawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:#fff;z-index:71;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;font-size:18px;line-height:1.7}
+  #helpDrawer.open{transform:none}
+  #helpDrawer .hd{background:var(--primary);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center}
+  #helpDrawer .hd b{font-size:22px}
+  #helpDrawer .hd button{background:none;border:none;color:#fff;font-size:30px;cursor:pointer;line-height:1;padding:0 6px}
+  #helpDrawer .bd{overflow-y:auto;padding:16px 18px 30px}
+  #helpDrawer .tour-go{display:block;width:100%;background:#b8892b;color:#fff;border:none;border-radius:12px;font:inherit;font-size:20px;font-weight:700;padding:14px;cursor:pointer;margin-bottom:6px}
+  #helpDrawer .sm{font-size:15px;color:var(--muted);text-align:center;margin-bottom:12px}
+  #helpDrawer h4{font-size:20px;color:var(--primary);margin:18px 0 6px;padding-bottom:4px;border-bottom:2px solid #b8892b}
+  #helpDrawer ol{padding-left:24px}
+  #helpDrawer li{margin-bottom:6px}
+  #helpDrawer .jump{font:inherit;font-size:15px;border:1px solid var(--primary);color:var(--primary);background:#fff;border-radius:20px;padding:2px 12px;cursor:pointer;margin-left:4px}
+  #helpDrawer .call{display:block;text-align:center;background:var(--primary);color:#fff;text-decoration:none;font-size:22px;font-weight:700;padding:12px;border-radius:12px;margin-top:10px}
+  #helpDrawer .warn{color:var(--danger);font-weight:700}
+
+  #tourRing{position:absolute;z-index:80;border:4px solid #f5c242;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.55);pointer-events:none;display:none;transition:all .25s}
+  #tourCard{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:min(560px,calc(100% - 24px));background:#fff;border-radius:16px;z-index:81;padding:18px 18px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;font-size:19px;line-height:1.65}
+  #tourCard.top{bottom:auto;top:16px}
+  #tourCard .st{font-size:15px;color:#b8892b;font-weight:700}
+  #tourCard h5{font-size:23px;color:var(--primary);margin:2px 0 6px}
+  #tourCard .nav{display:flex;gap:10px;margin-top:12px}
+  #tourCard .nav button{flex:1;font:inherit;font-size:18px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;border:2px solid var(--primary);background:#fff;color:var(--primary)}
+  #tourCard .nav button.n{background:var(--primary);color:#fff}
+  #tourCard .x{position:absolute;right:10px;top:6px;background:none;border:none;font-size:26px;color:var(--muted);cursor:pointer}
+  @media (max-width:560px){#helpFab{padding:12px 18px;font-size:17px}}
+  @media print{#helpFab,#helpNudge,#helpMask,#helpDrawer,#tourRing,#tourCard{display:none!important}}
+
   @media (max-width:1024px){
     .wrap{grid-template-columns:1fr}
     .pv-card{position:static;order:-1}
@@ -177,7 +215,7 @@
       <small>稅務記帳士事務所</small>
     </a>
     <nav>
-      <a href="guide.html">使用教學</a>
+      <a href="guide.html" id="navHelp">使用教學</a>
       <a href="#guide">折讓單說明</a>
       <a href="#faq">常見問題</a>
     </nav>
@@ -186,7 +224,7 @@
 
 <h1 class="page-title">折讓單產生器</h1>
 <p class="page-sub">輸入統編自動帶入公司資料，金額稅額自動計算，一鍵產生可列印的折讓證明單 PDF</p>
-<p style="text-align:center;margin:-8px 0 20px"><a href="guide.html" style="display:inline-block;background:#b8892b;color:#fff;text-decoration:none;font-weight:700;font-size:17px;padding:10px 22px;border-radius:30px">📖 第一次用？點這裡看教學</a></p>
+<p style="text-align:center;margin:-8px 0 20px"><a href="guide.html" id="topHelp" style="display:inline-block;background:#b8892b;color:#fff;text-decoration:none;font-weight:700;font-size:17px;padding:10px 22px;border-radius:30px">📖 第一次用？點這裡看教學</a></p>
 
 <main class="wrap">
   <!-- ===== 左：表單 ===== -->
@@ -349,6 +387,66 @@
   <div style="margin-bottom:4px">電話：<a href="tel:0932628001" style="color:inherit;font-weight:700">0932-628-001</a></div>
   <div>© <span id="yr"></span> 洪瑄璟稅務記帳士事務所 版權所有</div>
 </footer>
+
+
+<!-- ===== 教學 ===== -->
+<button type="button" id="helpFab" aria-label="打開教學">❓ 教學</button>
+<div id="helpNudge" role="dialog">
+  <b>第一次使用嗎？</b>
+  我可以一步一步帶您做一次，大約 1 分鐘。
+  <div class="row"><button type="button" class="y" id="nudgeYes">好，帶我做</button><button type="button" id="nudgeNo">不用了</button></div>
+</div>
+<div id="helpMask"></div>
+<aside id="helpDrawer" aria-label="使用教學">
+  <div class="hd"><b>📖 怎麼用？</b><button type="button" id="helpClose" aria-label="關閉">×</button></div>
+  <div class="bd">
+    <button type="button" class="tour-go" id="tourStart">👉 一步一步帶我做</button>
+    <p class="sm">會把要填的格子框起來，一格一格教您</p>
+
+    <h4>只要 4 步</h4>
+    <ol>
+      <li><b>賣方</b>：打統一編號 8 個數字，名字地址會自己跑出來 <button type="button" class="jump" data-go="sellerTaxId">帶我去</button></li>
+      <li><b>發票</b>：照原本的發票抄，數量、單價打好，金額會自己算 <button type="button" class="jump" data-go="rowsBody">帶我去</button></li>
+      <li><b>買方</b>：公司打統編；個人打身分證字號 <button type="button" class="jump" data-go="buyerTaxId">帶我去</button></li>
+      <li><b>做好了</b>：要印就按「直接列印」，要傳 LINE 就按「分享」 <button type="button" class="jump" data-go="pdfBtn">帶我去</button></li>
+    </ol>
+
+    <h4>做好了要做什麼？</h4>
+    <ol>
+      <li>要<b>印出來</b> → 按「🖨 直接列印」→ 選印表機</li>
+      <li>要<b>傳 LINE</b> → 按「📤 分享」→ 點 LINE → 選人</li>
+      <li>要<b>存起來</b> → 按「⬇ 下載 PDF」或「🖼 存成圖片」</li>
+    </ol>
+
+    <h4>印出來以後</h4>
+    <ol>
+      <li>沿中間虛線剪開，一共 4 小張</li>
+      <li>請買方在右下角框框<b>蓋章或簽名</b></li>
+      <li>第一、二聯自己留，第三、四聯給買方</li>
+    </ol>
+
+    <h4>要注意</h4>
+    <ol>
+      <li>出現<span class="warn">紅色的字</span>，代表號碼可能打錯，再對一次</li>
+      <li>手機上發票那一排很長，用手指<b>往左滑</b>看後面</li>
+      <li class="warn">關掉網頁，打的資料會不見，請先列印或存好</li>
+      <li>在 LINE 裡打不開，點右上角改用 Safari 或 Chrome 開啟</li>
+    </ol>
+
+    <h4>還是不會？</h4>
+    <a class="call" href="tel:0932628001">📞 0932-628-001</a>
+    <p class="sm" style="margin-top:6px">手機點一下就會撥出</p>
+    <p class="sm"><a href="guide.html">看完整版圖文教學 →</a></p>
+  </div>
+</aside>
+<div id="tourRing"></div>
+<div id="tourCard" role="dialog" aria-live="polite">
+  <button type="button" class="x" id="tourX" aria-label="結束教學">×</button>
+  <div class="st" id="tourStep"></div>
+  <h5 id="tourTitle"></h5>
+  <div id="tourText"></div>
+  <div class="nav"><button type="button" id="tourPrev">← 上一步</button><button type="button" class="n" id="tourNext">下一步 →</button></div>
+</div>
 
 <div id="renderHost"></div>
 <div id="printArea"></div>
@@ -814,6 +912,92 @@
     flash(msg + '（再按一次下載即可）');
     return false;
   }
+
+
+  // ===== 教學 =====
+  const drawer = $('helpDrawer'), mask = $('helpMask');
+  function openHelp() { mask.style.display = 'block'; drawer.classList.add('open'); $('helpNudge').style.display = 'none'; }
+  function closeHelp() { drawer.classList.remove('open'); mask.style.display = 'none'; }
+  $('helpFab').addEventListener('click', openHelp);
+  ['navHelp', 'topHelp'].forEach(id => $(id) && $(id).addEventListener('click', e => { e.preventDefault(); openHelp(); }));
+  $('helpClose').addEventListener('click', closeHelp);
+  mask.addEventListener('click', closeHelp);
+
+  const TOUR = [
+    { el: 'sellerTaxId', t: '填賣方的統一編號', d: '賣方就是<b>當初開發票的公司</b>。<br>在框起來的這格，打 <b>8 個數字</b>的統一編號，名字和地址會<b>自己跑出來</b>。<br>沒跑出來的話，自己打也可以。' },
+    { el: 'notaDate', t: '日期不用動', d: '日期已經自動填好<b>今天</b>。<br>旁邊的「下載格式」也不用動，用<b>四聯</b>就好。' },
+    { el: 'rowsBody', box: '.rows-wrap', t: '照著發票抄', d: '拿出原本那張發票，抄<b>發票日期</b>、<b>發票號碼</b>、<b>品名</b>。<br><b>數量</b>和<b>單價</b>打好，<b>金額會自己算</b>。<br>手機上這一排很長，用手指<b>往左滑</b>看後面。' },
+    { el: 'btnAdd', t: '有好幾張發票？', d: '按這個 <b>「＋ 新增」</b>，就會多一排可以填。<br>不要的那一排，按最右邊紅色的 <b>×</b> 刪掉。' },
+    { el: 'buyerTaxId', box: '.field', parent: 'buyerTaxId', t: '填買方', d: '買方就是<b>當初收發票的人或公司</b>。<br>公司：打<b>統一編號</b>，名字地址會自己跑出來。<br>個人：打<b>身分證字號</b>，名字地址自己打。' },
+    { el: 'pvCard', t: '看一下對不對', d: '這裡長得就跟<b>印出來的紙一模一樣</b>。<br>看看名字、號碼、金額有沒有錯。' },
+    { el: 'pdfBtn', box: '.act', t: '做好了！', d: '要<b>印出來</b>：按「🖨 直接列印」<br>要<b>存起來</b>：按「⬇ 下載 PDF」<br><b>記得</b>：關掉網頁資料會不見，請先印或存好。' },
+    { el: 'shareBtn', box: '.act-sub', t: '傳給別人', d: '要<b>傳 LINE</b>：按「📤 分享」→ 點 LINE → 選人<br>要<b>存到相簿</b>：按「🖼 存成圖片」<br>不會的話，隨時按右下角的 <b>❓ 教學</b>。' }
+  ];
+  let ti = -1;
+  const ring = $('tourRing'), card = $('tourCard');
+  function tourTarget(s) {
+    const base = $(s.el);
+    if (!base) return null;
+    if (s.box) return base.closest(s.box) || base;
+    return base;
+  }
+  function placeRing() {
+    if (ti < 0) return;
+    const el = tourTarget(TOUR[ti]);
+    if (!el || el.offsetParent === null) { ring.style.display = 'none'; return; }
+    const r = el.getBoundingClientRect(), pad = 6;
+    ring.style.display = 'block';
+    ring.style.left = (r.left + scrollX - pad) + 'px';
+    ring.style.top = (r.top + scrollY - pad) + 'px';
+    ring.style.width = (r.width + pad * 2) + 'px';
+    ring.style.height = (r.height + pad * 2) + 'px';
+    // 目標在畫面下半部時，說明卡移到上面，避免擋住
+    card.classList.toggle('top', r.top + r.height / 2 > innerHeight * 0.55);
+  }
+  function showStep(i) {
+    ti = Math.max(0, Math.min(TOUR.length - 1, i));
+    const s = TOUR[ti];
+    if (s.el === 'shareBtn' && $('shareBtn').style.display === 'none') s.box = '.act-sub';
+    $('tourStep').textContent = `第 ${ti + 1} 步，共 ${TOUR.length} 步`;
+    $('tourTitle').textContent = s.t;
+    $('tourText').innerHTML = s.d;
+    $('tourPrev').style.visibility = ti ? 'visible' : 'hidden';
+    $('tourNext').textContent = ti === TOUR.length - 1 ? '我學會了 ✓' : '下一步 →';
+    card.style.display = 'block';
+    const el = tourTarget(s);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(placeRing, 350); setTimeout(placeRing, 700);
+    }
+  }
+  function startTour() { closeHelp(); $('helpNudge').style.display = 'none'; $('helpFab').style.display = 'none'; showStep(0); }
+  function endTour() { ti = -1; ring.style.display = 'none'; card.style.display = 'none'; $('helpFab').style.display = ''; }
+  $('tourStart').addEventListener('click', startTour);
+  $('tourNext').addEventListener('click', () => ti === TOUR.length - 1 ? endTour() : showStep(ti + 1));
+  $('tourPrev').addEventListener('click', () => showStep(ti - 1));
+  $('tourX').addEventListener('click', endTour);
+  addEventListener('resize', placeRing);
+  addEventListener('scroll', placeRing, { passive: true });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { endTour(); closeHelp(); } });
+
+  // 說明裡的「帶我去」：捲到那一格並閃一下
+  drawer.querySelectorAll('.jump').forEach(b => b.addEventListener('click', () => {
+    closeHelp();
+    const el = $(b.dataset.go);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const box = el.closest('.rows-wrap') || el.closest('.act') || el;
+    box.animate([{ boxShadow: '0 0 0 0 rgba(245,194,66,0)' }, { boxShadow: '0 0 0 8px rgba(245,194,66,.9)' }, { boxShadow: '0 0 0 0 rgba(245,194,66,0)' }], { duration: 900, iterations: 2 });
+    if (el.focus && el.tagName === 'INPUT') setTimeout(() => el.focus({ preventScroll: true }), 500);
+  }));
+
+  // 第一次來，問要不要帶做一次
+  let seen = false;
+  try { seen = localStorage.getItem('allowanceTourSeen') === '1'; } catch (e) {}
+  const markSeen = () => { try { localStorage.setItem('allowanceTourSeen', '1'); } catch (e) {} };
+  if (!seen) setTimeout(() => { if (ti < 0) $('helpNudge').style.display = 'block'; }, 1200);
+  $('nudgeYes').addEventListener('click', () => { markSeen(); startTour(); });
+  $('nudgeNo').addEventListener('click', () => { markSeen(); $('helpNudge').style.display = 'none'; });
 
   // ===== 初始化 =====
   $('notaDate').valueAsDate = new Date();
