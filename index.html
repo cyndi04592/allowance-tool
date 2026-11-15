@@ -54,6 +54,7 @@
   input.auto{background:#f3f7f7;color:var(--primary)}
   .hint{font-size:12px;color:var(--muted);min-height:16px}
   .hint.err{color:var(--danger)}
+  .hint a{color:var(--primary);font-weight:700}
   .spin{position:absolute;right:10px;top:31px;width:16px;height:16px;border:2px solid var(--primary-light);border-top-color:var(--primary);border-radius:50%;animation:sp .7s linear infinite;display:none}
   @keyframes sp{to{transform:rotate(360deg)}}
 
@@ -671,20 +672,43 @@
     // 只查 8 碼統編；身分證字號不送出
     if (!/^\d{8}$/.test(v) || prob || lastLookup[role] === v) return;
     lastLookup[role] = v;
-    const sp = $(`${role}Spinner`); sp.style.display = 'block';
-    try {
-      const res = await fetch(`https://company.g0v.ronny.tw/api/show/${v}`);
-      const json = await res.json();
-      const d = json && json.data;
-      if (!d) { hint.textContent = '查無登記資料，請手動填寫'; return; }
-      let name = d['公司名稱'] || d['商業名稱'] || d['名稱'] || '';
-      if (Array.isArray(name)) name = name[0];
-      const addr = d['公司所在地'] || d['地址'] || d['營業地址'] || '';
+    const sp = $(`${role}Spinner`);
+    const OFFICIAL = '<a href="https://findbiz.nat.gov.tw/fts/query/QueryBar/queryInit.do" target="_blank" rel="noopener">到經濟部官方網站查 ↗</a>';
+    const fill = (name, addr, from) => {
       if (name) $(`${role}Name`).value = name;
       if (addr) $(`${role}Addr`).value = addr;
-      hint.textContent = name ? '已自動帶入，請確認是否正確' : '查無名稱，請手動填寫';
+      hint.innerHTML = from;
+    };
+
+    // ① 先找這支手機記過的資料（常用公司、查過的統編），不用上網
+    const cache = LS.get('allowanceLookup', {});
+    const known = getCos().find(c => c.id === v) || cache[v];
+    if (known && known.name) { fill(known.name, known.addr, '已帶入（之前用過的資料），請確認是否正確'); sync(); return; }
+
+    // ② 上網查，逾時 8 秒，失敗自動再試一次
+    const fetchOnce = async () => {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+      try { const res = await fetch(`https://company.g0v.ronny.tw/api/show/${v}`, { signal: ctl.signal }); return await res.json(); }
+      finally { clearTimeout(t); }
+    };
+    sp.style.display = 'block';
+    hint.textContent = '查詢中…';
+    try {
+      let json;
+      try { json = await fetchOnce(); }
+      catch (e) { hint.textContent = '網路有點慢，再試一次…'; await new Promise(r => setTimeout(r, 1200)); json = await fetchOnce(); }
+      if ($(`${role}TaxId`).value.trim() !== v) return;   // 查的時候使用者已經改了號碼
+      const d = json && json.data;
+      let name = d ? (d['公司名稱'] || d['商業名稱'] || d['名稱'] || '') : '';
+      if (Array.isArray(name)) name = name[0];
+      const addr = d ? (d['公司所在地'] || d['地址'] || d['營業地址'] || '') : '';
+      if (!name) { hint.innerHTML = `查不到這個統編，請手動填寫，或 ${OFFICIAL}`; return; }
+      fill(name, addr, '已自動帶入，請確認是否正確');
+      cache[v] = { name, addr }; 
+      const keys = Object.keys(cache); if (keys.length > 200) delete cache[keys[0]];
+      LS.set('allowanceLookup', cache);
     } catch (e) {
-      hint.textContent = '查詢失敗，請手動填寫';
+      hint.innerHTML = `自動查詢暫時連不上，請手動填寫，或 ${OFFICIAL}`;
       lastLookup[role] = '';
     } finally {
       sp.style.display = 'none';
