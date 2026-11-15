@@ -23,7 +23,8 @@
     --bg:#f6f8f9;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Noto Sans TC',system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+  body{font-family:'Noto Sans TC',system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6;overflow-x:clip}
+  .card,.field,.saved-row select{min-width:0}
   a{color:var(--primary)}
 
   /* ===== 站台表頭 ===== */
@@ -200,7 +201,7 @@
   @media print{#helpFab,#helpNudge,#helpMask,#helpDrawer,#tourRing,#tourCard{display:none!important}}
 
   @media (max-width:1024px){
-    .wrap{grid-template-columns:1fr}
+    .wrap{grid-template-columns:minmax(0,1fr)}
     .pv-card{position:static}
     #previewScroll{max-height:75vh}
     .mob-only{display:block}
