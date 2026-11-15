@@ -63,12 +63,20 @@
   .btn-main:disabled{opacity:.6;cursor:wait}
 
   .rows-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
-  table.rows{width:100%;border-collapse:collapse;min-width:820px;font-size:13px}
+  table.rows{width:100%;border-collapse:collapse;min-width:920px;font-size:13px}
   table.rows th{background:var(--primary-light);color:var(--primary);font-weight:500;padding:6px 4px;white-space:nowrap}
   table.rows td{padding:4px 3px;border-top:1px solid var(--border)}
   table.rows input,table.rows select{padding:6px 6px;font-size:13px}
   table.rows .del{border:none;background:none;color:var(--danger);cursor:pointer;font-size:18px;padding:0 6px}
-  .col-type{width:62px}.col-date{width:132px}.col-no{width:118px}.col-qty{width:68px}.col-price{width:84px}.col-amt{width:96px}.col-note{width:78px}
+  .col-type{width:62px}.col-date{width:132px}.col-no{width:118px}.col-qty{width:68px}.col-price{width:84px}.col-amt{width:96px}.col-inc{width:100px}.col-note{width:78px}
+  .inc-hint{font-size:11px;color:var(--muted);text-align:right;padding-right:4px;min-height:14px}
+  /* 草稿、常用公司 */
+  #draftBar{display:none;background:#fff8e6;border:1px solid #f0d58a;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;align-items:center;gap:10px;flex-wrap:wrap}
+  #draftBar span{flex:1;min-width:180px}
+  .saved-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .saved-row select{flex:1;min-width:0;background:var(--primary-light);border-color:#bcd6d6;color:var(--primary);font-weight:500}
+  .saved-row .rm{font:inherit;font-size:13px;border:none;background:none;color:var(--danger);cursor:pointer;text-decoration:underline;display:none;white-space:nowrap}
+  .mob-only{display:none}
   .rows-tip{font-size:12px;color:var(--muted);margin-top:6px}
 
   /* ===== 預覽 ===== */
@@ -193,10 +201,31 @@
 
   @media (max-width:1024px){
     .wrap{grid-template-columns:1fr}
-    .pv-card{position:static;order:-1}
+    .pv-card{position:static}
+    #previewScroll{max-height:75vh}
+    .mob-only{display:block}
     #pvToggle{display:inline-block}
     #previewScroll{max-height:none}
     .site-head nav{display:none}
+  }
+  /* ===== 手機：明細改直式卡片，不用左右滑 ===== */
+  @media (max-width:760px){
+    input,select{font-size:16px}  /* iPhone 小於 16px 點下去會自動放大 */
+    .rows-wrap{overflow:visible;border:none}
+    table.rows{min-width:0;font-size:15px}
+    table.rows thead{display:none}
+    table.rows tbody{display:block}
+    table.rows tr{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;border:1px solid var(--border);border-radius:12px;padding:14px 12px 12px;margin-bottom:12px;position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    table.rows tr::before{content:attr(data-n);grid-column:1/-1;font-weight:700;color:var(--primary);font-size:16px}
+    table.rows td{display:flex;flex-direction:column;border:none;padding:0;min-width:0}
+    table.rows td::before{content:attr(data-l);font-size:13px;color:var(--muted);margin-bottom:3px}
+    table.rows td.full{grid-column:1/-1}
+    table.rows td.delc{position:absolute;top:8px;right:8px}
+    table.rows td.delc::before{content:none}
+    table.rows input,table.rows select{padding:10px;font-size:16px}
+    table.rows .del{font-size:15px;border:1px solid #f1c4bf;border-radius:8px;padding:4px 10px;background:#fff}
+    .inc-hint{text-align:left;font-size:12.5px;padding:2px 0 0}
+    .sec .btn{padding:8px 16px;font-size:15px}
   }
   @media (max-width:560px){
     .grid2{grid-template-columns:1fr}
@@ -230,8 +259,10 @@
   <!-- ===== 左：表單 ===== -->
   <section class="card">
     <h2>📝 填寫折讓單資料</h2>
+    <div id="draftBar"><span id="draftText">已幫您找回上次填到一半的資料</span><button type="button" class="btn" id="draftClear">清空，重新填一張</button></div>
 
     <div class="sec">原開立銷貨發票單位（賣方）</div>
+    <div class="saved-row" id="sellerSavedRow"><select id="sellerSaved" aria-label="從常用公司選賣方"></select><button type="button" class="rm" id="sellerSavedRm">從常用移除</button></div>
     <div class="grid2">
       <div class="field">
         <label for="sellerTaxId">統一編號</label>
@@ -276,6 +307,7 @@
             <th class="col-qty">數量</th>
             <th class="col-price">單價</th>
             <th class="col-amt">未稅金額</th>
+            <th class="col-inc">含稅金額</th>
             <th class="col-note">課稅別</th>
             <th></th>
           </tr>
@@ -283,9 +315,10 @@
         <tbody id="rowsBody"></tbody>
       </table>
     </div>
-    <p class="rows-tip">數量、單價、未稅金額任填兩格，第三格自動算出；應稅項目營業稅額以 5% 計算。明細最多 7 列。</p>
+    <p class="rows-tip">數量、單價、未稅金額任填兩格，第三格自動算出。<b>只知道含稅總額？</b>直接打在「含稅金額」，會自動拆成未稅金額和 5% 稅額。明細最多 7 列。</p>
 
     <div class="sec">原進貨營業人或買受人（買方）</div>
+    <div class="saved-row" id="buyerSavedRow"><select id="buyerSaved" aria-label="從常用公司選買方"></select><button type="button" class="rm" id="buyerSavedRm">從常用移除</button></div>
     <div class="grid2">
       <div class="field">
         <label for="buyerTaxId">統一編號／身分證字號</label>
@@ -312,6 +345,7 @@
       <button type="button" class="btn-sub" id="imgBtn">🖼 存成圖片</button>
       <button type="button" class="btn-sub" id="csvBtn">📊 匯出 Excel</button>
     </div>
+    <button type="button" class="btn-sub mob-only" id="toPreview" style="width:100%;margin-top:10px">👁 先看一下印出來的樣子</button>
     <p class="act-tip">手機也能用：「分享」可直接傳 PDF 到 LINE、Email 或雲端硬碟；「存成圖片」可存進相簿；「直接列印」會叫出列印畫面，可選印表機或另存 PDF；「匯出 Excel」可把明細帶進記帳或報表。</p>
     <p class="privacy">🔒 所有資料只在您的瀏覽器中計算與產生 PDF，不會上傳或儲存。（僅查詢統編時會向公開資料 API 送出統編號碼）</p>
   </section>
@@ -428,8 +462,9 @@
     <h4>要注意</h4>
     <ol>
       <li>出現<span class="warn">紅色的字</span>，代表號碼可能打錯，再對一次</li>
-      <li>手機上發票那一排很長，用手指<b>往左滑</b>看後面</li>
-      <li class="warn">關掉網頁，打的資料會不見，請先列印或存好</li>
+      <li>只知道<b>含稅總額</b>？打在「含稅金額」，會自動拆成未稅和稅金</li>
+      <li>關掉網頁<b>資料會自動存著</b>，下次打開還在；要做新的一張，按上面黃色框的「清空，重新填一張」</li>
+      <li>做過一次的公司，下次點「📋 從常用的公司選」就能帶入</li>
       <li>在 LINE 裡打不開，點右上角改用 Safari 或 Chrome 開啟</li>
     </ol>
 
@@ -482,7 +517,7 @@
   // ===== 明細列 =====
   function addRow(init = {}) {
     if (rows.length >= MAX_ROWS) { flash(`明細最多 ${MAX_ROWS} 列`); return; }
-    rows.push(Object.assign({ id: ++seq, type: '三', date: '', no: '', item: '', qty: '', price: '', amt: '', note: '應稅', user: [], auto: null }, init));
+    rows.push(Object.assign({ id: ++seq, type: '三', date: '', no: '', item: '', qty: '', price: '', amt: '', inc: '', note: '應稅', user: [], auto: null }, init));
     renderRows(); sync();
   }
   function delRow(id) {
@@ -510,19 +545,56 @@
     if (d === 'qty') r.qty = (p && !isNaN(a)) ? fmt(solve(a, p)) : '';
   }
 
+  // ===== 稅額：有打含稅金額時，稅額 = 含稅 − 未稅，保證加起來剛好 =====
+  const hasInc = r => r.inc !== '' && r.inc != null && !isNaN(num(r.inc));
+  function rowTax(r) {
+    if (r.note !== '應稅') return 0;
+    const amt = Math.round(num(r.amt) || 0);
+    return hasInc(r) ? Math.round(num(r.inc)) - amt : Math.round(amt * 0.05);
+  }
+  // 含稅 → 未稅
+  function applyInc(r) {
+    if (!hasInc(r)) return;
+    const inc = Math.round(num(r.inc));
+    r.amt = fmt(r.note === '應稅' ? Math.round(inc / 1.05) : inc);
+    r.user = r.user.filter(x => x !== 'amt'); r.user.push('amt');
+    if (r.auto === 'amt') r.auto = null;
+    recalc(r);
+  }
+  function incHint(r) {
+    if (hasInc(r)) return r.note === '應稅' ? `未稅 ${fmt(Math.round(num(r.amt) || 0))}＋稅 ${fmt(rowTax(r))}` : '此項不含稅';
+    const a = Math.round(num(r.amt) || 0);
+    return a ? `含稅共 ${fmt(a + rowTax(r))}` : '';
+  }
+
   function renderRows() {
-    $('rowsBody').innerHTML = rows.map(r => `
-      <tr data-id="${r.id}">
-        <td><select data-k="type"><option${r.type==='三'?' selected':''}>三</option><option${r.type==='二'?' selected':''}>二</option></select></td>
-        <td><input type="date" data-k="date" value="${esc(r.date)}"></td>
-        <td><input data-k="no" maxlength="11" placeholder="AB12345678" value="${esc(r.no)}"></td>
-        <td><input data-k="item" placeholder="品名" value="${esc(r.item)}"></td>
-        <td><input data-f="qty" inputmode="decimal" value="${esc(r.qty)}" class="${r.auto==='qty'?'auto':''}" placeholder="${r.auto==='qty'?'自動':''}"></td>
-        <td><input data-f="price" inputmode="decimal" value="${esc(r.price)}" class="${r.auto==='price'?'auto':''}" placeholder="${r.auto==='price'?'自動':''}"></td>
-        <td><input data-f="amt" inputmode="decimal" value="${esc(r.amt)}" class="${r.auto==='amt'?'auto':''}" placeholder="${r.auto==='amt'?'自動':''}"></td>
-        <td><select data-k="note">${['應稅','零稅率','免稅'].map(o=>`<option${r.note===o?' selected':''}>${o}</option>`).join('')}</select></td>
-        <td><button type="button" class="del" title="刪除">×</button></td>
+    const tot = rows.length;
+    $('rowsBody').innerHTML = rows.map((r, i) => `
+      <tr data-id="${r.id}" data-n="第 ${i + 1} 張發票${tot > 1 ? '' : ''}">
+        <td data-l="聯式"><select data-k="type"><option${r.type==='三'?' selected':''}>三</option><option${r.type==='二'?' selected':''}>二</option></select></td>
+        <td data-l="發票日期"><input type="date" data-k="date" value="${esc(r.date)}"></td>
+        <td data-l="發票號碼" class="full"><input data-k="no" maxlength="11" autocapitalize="characters" placeholder="例：AB12345678" value="${esc(r.no)}"></td>
+        <td data-l="品名" class="full"><input data-k="item" placeholder="退回的東西，或寫「折讓」" value="${esc(r.item)}"></td>
+        <td data-l="數量"><input data-f="qty" inputmode="decimal" value="${esc(r.qty)}" class="${r.auto==='qty'?'auto':''}" placeholder="${r.auto==='qty'?'自動':''}"></td>
+        <td data-l="單價"><input data-f="price" inputmode="decimal" value="${esc(r.price)}" class="${r.auto==='price'?'auto':''}" placeholder="${r.auto==='price'?'自動':''}"></td>
+        <td data-l="未稅金額"><input data-f="amt" inputmode="decimal" value="${esc(r.amt)}" class="${r.auto==='amt'||hasInc(r)?'auto':''}" placeholder="${r.auto==='amt'?'自動':''}"></td>
+        <td data-l="含稅金額（只知道總額就打這）"><input data-g="inc" inputmode="decimal" value="${esc(r.inc)}" placeholder="選填"><div class="inc-hint">${esc(incHint(r))}</div></td>
+        <td data-l="課稅別" class="full"><select data-k="note">${['應稅','零稅率','免稅'].map(o=>`<option${r.note===o?' selected':''}>${o}</option>`).join('')}</select></td>
+        <td class="delc"><button type="button" class="del" title="刪除這張">× 刪除</button></td>
       </tr>`).join('');
+  }
+  // 只更新同一列的數字格，不重畫，避免游標跳掉
+  function refreshRowInputs(tr, r, except) {
+    tr.querySelectorAll('input[data-f]').forEach(x => {
+      const k = x.dataset.f;
+      if (x !== except) x.value = r[k];
+      x.classList.toggle('auto', r.auto === k || (k === 'amt' && hasInc(r)));
+      x.placeholder = r.auto === k ? '自動' : '';
+    });
+    const ie = tr.querySelector('input[data-g="inc"]');
+    if (ie && ie !== except) ie.value = r.inc;
+    const hint = tr.querySelector('.inc-hint');
+    if (hint) hint.textContent = incHint(r);
   }
 
   $('rowsBody').addEventListener('input', e => {
@@ -531,20 +603,20 @@
     const el = e.target;
     if (el.dataset.k) {
       r[el.dataset.k] = el.dataset.k === 'no' ? el.value.toUpperCase() : el.value;
+      if (el.dataset.k === 'note') { applyInc(r); refreshRowInputs(tr, r, null); }
+    } else if (el.dataset.g === 'inc') {
+      r.inc = el.value;
+      if (hasInc(r)) applyInc(r);
+      refreshRowInputs(tr, r, el);
     } else if (el.dataset.f) {
       const f = el.dataset.f;
       r[f] = el.value;
       r.user = r.user.filter(x => x !== f);
       if (el.value.trim() !== '') r.user.push(f);
       if (r.auto === f) r.auto = null;
+      if (f === 'amt') r.inc = '';          // 自己改未稅金額，就不用含稅換算
       recalc(r);
-      // 只更新另外兩格，避免重畫整列讓游標跳掉
-      tr.querySelectorAll('input[data-f]').forEach(x => {
-        const k = x.dataset.f;
-        if (x !== el) x.value = r[k];
-        x.classList.toggle('auto', r.auto === k);
-        x.placeholder = r.auto === k ? '自動' : '';
-      });
+      refreshRowInputs(tr, r, el);
     }
     sync();
   });
@@ -626,6 +698,104 @@
     $(id).addEventListener('change', sync);
   });
 
+
+  // ===== 自動存草稿、常用公司（只存在這支手機／這台電腦）=====
+  const LS = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  const DRAFT_KEY = 'allowanceDraft', CO_KEY = 'allowanceCompanies';
+  const FIELDS = ['sellerTaxId', 'sellerName', 'sellerAddr', 'buyerTaxId', 'buyerName', 'buyerAddr', 'copyType'];
+  let restoring = false, draftTimer = 0;
+
+  function rowHasData(r) { return !!(r.date || r.no || r.item || r.qty || r.price || r.amt || r.inc); }
+  function saveDraft() {
+    if (restoring) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      const f = {}; FIELDS.forEach(id => f[id] = $(id).value);
+      const any = FIELDS.some(id => id !== 'copyType' && f[id].trim()) || rows.some(rowHasData);
+      if (!any) { LS.del(DRAFT_KEY); return; }
+      LS.set(DRAFT_KEY, { f, rows: rows.map(({ id, ...r }) => r), at: Date.now() });
+    }, 400);
+  }
+  function restoreDraft() {
+    const d = LS.get(DRAFT_KEY, null);
+    if (!d || !d.f) return false;
+    restoring = true;
+    FIELDS.forEach(id => { if (d.f[id] != null) $(id).value = d.f[id]; });
+    rows = (d.rows || []).slice(0, MAX_ROWS).map(r => Object.assign({ inc: '', user: [], auto: null }, r, { id: ++seq }));
+    if (!rows.length) rows.push({ id: ++seq, type: '三', date: '', no: '', item: '', qty: '', price: '', amt: '', inc: '', note: '應稅', user: [], auto: null });
+    renderRows();
+    restoring = false;
+    const t = new Date(d.at || Date.now());
+    $('draftText').textContent = `已幫您找回上次填到一半的資料（${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}）`;
+    $('draftBar').style.display = 'flex';
+    ['seller', 'buyer'].forEach(role => {
+      const v = $(`${role}TaxId`).value.trim();
+      if (v) { lastLookup[role] = v; const pr = idProblem(v.toUpperCase(), role === 'buyer'); $(`${role}Hint`).textContent = pr; $(`${role}Hint`).className = 'hint' + (pr ? ' err' : ''); }
+    });
+    return true;
+  }
+  $('draftClear').addEventListener('click', () => {
+    restoring = true;
+    FIELDS.forEach(id => { if (id !== 'copyType') $(id).value = ''; });
+    $('copyType').value = '4';
+    ['seller', 'buyer'].forEach(r => { $(`${r}Hint`).textContent = ''; lastLookup[r] = ''; $(`${r}Saved`).value = ''; $(`${r}SavedRm`).style.display = 'none'; });
+    $('notaDate').valueAsDate = new Date();
+    rows = []; restoring = false;
+    LS.del(DRAFT_KEY);
+    $('draftBar').style.display = 'none';
+    addRow();
+    scrollTo({ top: 0, behavior: 'smooth' });
+    flash('已清空，可以開始填新的一張');
+  });
+
+  // 常用公司
+  const getCos = () => LS.get(CO_KEY, []);
+  function rememberCompanies() {
+    let list = getCos();
+    ['seller', 'buyer'].forEach(role => {
+      const id = $(`${role}TaxId`).value.trim().toUpperCase(), name = $(`${role}Name`).value.trim(), addr = $(`${role}Addr`).value.trim();
+      if (!name || (id && idProblem(id, role === 'buyer'))) return;
+      const key = id || name;
+      list = list.filter(c => (c.id || c.name) !== key);
+      list.unshift({ id, name, addr, at: Date.now() });
+    });
+    LS.set(CO_KEY, list.slice(0, 40));
+    renderSaved();
+  }
+  function renderSaved() {
+    const list = getCos();
+    ['seller', 'buyer'].forEach(role => {
+      const sel = $(`${role}Saved`), cur = sel.value;
+      $(`${role}SavedRow`).style.display = list.length ? 'flex' : 'none';
+      sel.innerHTML = `<option value="">📋 從常用的公司選（${list.length} 家）</option>` +
+        list.map((c, i) => `<option value="${i}">${esc(c.name)}${c.id ? '｜' + esc(c.id) : ''}</option>`).join('');
+      if (cur && list[cur]) sel.value = cur; else { sel.value = ''; $(`${role}SavedRm`).style.display = 'none'; }
+    });
+  }
+  ['seller', 'buyer'].forEach(role => {
+    $(`${role}Saved`).addEventListener('change', e => {
+      const c = getCos()[e.target.value];
+      $(`${role}SavedRm`).style.display = c ? 'inline' : 'none';
+      if (!c) return;
+      $(`${role}TaxId`).value = c.id; $(`${role}Name`).value = c.name; $(`${role}Addr`).value = c.addr;
+      lastLookup[role] = c.id;
+      const pr = idProblem(c.id, role === 'buyer');
+      $(`${role}Hint`).textContent = pr || '已從常用公司帶入'; $(`${role}Hint`).className = 'hint' + (pr ? ' err' : '');
+      sync();
+    });
+    $(`${role}SavedRm`).addEventListener('click', () => {
+      const i = $(`${role}Saved`).value;
+      const list = getCos(); if (!list[i]) return;
+      const nm = list[i].name; list.splice(i, 1); LS.set(CO_KEY, list);
+      $(`${role}Saved`).value = ''; renderSaved();
+      flash(`已把「${nm}」從常用移除`);
+    });
+  });
+
   // ===== 證明單 HTML =====
   function taxGrid(val) {
     const s = (val || '').padEnd(8, ' ').slice(0, 8);
@@ -651,7 +821,7 @@
       const qty = num(r.qty), price = num(r.price);
       const amt = Math.round(num(r.amt) || 0);
       const taxed = r.note === '應稅';
-      const tax = taxed ? Math.round(amt * 0.05) : 0;
+      const tax = rowTax(r);
       totalAmt += amt; totalTax += tax;
       const empty = !r.date && !r.no && !r.item && !amt;
       body += `<tr>
@@ -728,6 +898,7 @@
   // ===== 預覽 =====
   let syncQueued = false;
   function sync() {
+    saveDraft();
     if (syncQueued) return;
     syncQueued = true;
     requestAnimationFrame(() => {
@@ -770,6 +941,7 @@
 
   // 檢查買方編號，有問題時要再按一次才繼續
   function checkBeforeExport() {
+    rememberCompanies();
     const bp = idProblem($('buyerTaxId').value.trim().toUpperCase(), true);
     return !(bp && !confirmSoft(`買方${bp}，仍要繼續嗎？`));
   }
@@ -861,6 +1033,7 @@
 
   // ④ 匯出 Excel（CSV，Excel／Google 試算表都能開）
   $('csvBtn').addEventListener('click', () => {
+    rememberCompanies();
     const V = id => $(id).value.trim();
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [];
@@ -873,7 +1046,7 @@
     let ta = 0, tt = 0;
     rows.forEach(r => {
       const amt = Math.round(num(r.amt) || 0);
-      const tax = r.note === '應稅' ? Math.round(amt * 0.05) : 0;
+      const tax = rowTax(r);
       if (!r.no && !r.item && !amt) return;
       ta += amt; tt += tax;
       const n = v => isNaN(num(v)) ? '' : num(v);
@@ -886,6 +1059,7 @@
 
   // ===== 直接列印（手機、電腦都可，走系統列印對話框）=====
   function doPrint() {
+    rememberCompanies();
     const pa = $('printArea');
     pa.innerHTML = pagesFor(+$('copyType').value).map(([a, b]) => buildA4(a, b)).join('');
     const go = () => { try { window.print(); } catch (e) { flash('此瀏覽器不支援列印，請改用「下載 PDF」'); } };
@@ -893,6 +1067,7 @@
   }
   window.addEventListener('afterprint', () => { $('printArea').innerHTML = ''; });
   $('printBtn').addEventListener('click', doPrint);
+  $('toPreview').addEventListener('click', () => $('pvCard').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
   // 不用 alert/confirm 擋畫面，用頁內提示
   function flash(msg) {
@@ -926,11 +1101,11 @@
   const TOUR = [
     { el: 'sellerTaxId', t: '填賣方的統一編號', d: '賣方就是<b>當初開發票的公司</b>。<br>在框起來的這格，打 <b>8 個數字</b>的統一編號，名字和地址會<b>自己跑出來</b>。<br>沒跑出來的話，自己打也可以。' },
     { el: 'notaDate', t: '日期不用動', d: '日期已經自動填好<b>今天</b>。<br>旁邊的「下載格式」也不用動，用<b>四聯</b>就好。' },
-    { el: 'rowsBody', box: '.rows-wrap', t: '照著發票抄', d: '拿出原本那張發票，抄<b>發票日期</b>、<b>發票號碼</b>、<b>品名</b>。<br><b>數量</b>和<b>單價</b>打好，<b>金額會自己算</b>。<br>手機上這一排很長，用手指<b>往左滑</b>看後面。' },
+    { el: 'rowsBody', box: '.rows-wrap', t: '照著發票抄', d: '拿出原本那張發票，抄<b>發票日期</b>、<b>發票號碼</b>、<b>品名</b>。<br><b>數量</b>和<b>單價</b>打好，<b>金額會自己算</b>。<br>只知道<b>總共多少錢</b>？打在「<b>含稅金額</b>」，會自動拆好。' },
     { el: 'btnAdd', t: '有好幾張發票？', d: '按這個 <b>「＋ 新增」</b>，就會多一排可以填。<br>不要的那一排，按最右邊紅色的 <b>×</b> 刪掉。' },
     { el: 'buyerTaxId', box: '.field', parent: 'buyerTaxId', t: '填買方', d: '買方就是<b>當初收發票的人或公司</b>。<br>公司：打<b>統一編號</b>，名字地址會自己跑出來。<br>個人：打<b>身分證字號</b>，名字地址自己打。' },
     { el: 'pvCard', t: '看一下對不對', d: '這裡長得就跟<b>印出來的紙一模一樣</b>。<br>看看名字、號碼、金額有沒有錯。' },
-    { el: 'pdfBtn', box: '.act', t: '做好了！', d: '要<b>印出來</b>：按「🖨 直接列印」<br>要<b>存起來</b>：按「⬇ 下載 PDF」<br><b>記得</b>：關掉網頁資料會不見，請先印或存好。' },
+    { el: 'pdfBtn', box: '.act', t: '做好了！', d: '要<b>印出來</b>：按「🖨 直接列印」<br>要<b>存起來</b>：按「⬇ 下載 PDF」<br>做過的公司會記起來，下次點「📋 從常用的公司選」就好。' },
     { el: 'shareBtn', box: '.act-sub', t: '傳給別人', d: '要<b>傳 LINE</b>：按「📤 分享」→ 點 LINE → 選人<br>要<b>存到相簿</b>：按「🖼 存成圖片」<br>不會的話，隨時按右下角的 <b>❓ 教學</b>。' }
   ];
   let ti = -1;
@@ -1002,7 +1177,8 @@
   // ===== 初始化 =====
   $('notaDate').valueAsDate = new Date();
   $('yr').textContent = new Date().getFullYear();
-  addRow();
+  renderSaved();
+  if (!restoreDraft()) addRow(); else sync();
 })();
 </script>
 </body>
