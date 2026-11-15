@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>折讓單產生器｜洪瑄璟稅務記帳士事務所</title>
+<meta name="description" content="洪瑄璟稅務記帳士事務所免費線上折讓單產生器：輸入統編自動帶入公司資料，自動計算稅額，一鍵產生「營業人銷貨退回進貨退出或折讓證明單」PDF。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --primary:#1f5f66;
+    --primary-hover:#174a50;
+    --primary-light:#e8f2f2;
+    --accent:#b8892b;
+    --text:#24323d;
+    --muted:#6b7680;
+    --border:#d9dee2;
+    --danger:#c0392b;
+    --bg:#f6f8f9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans TC',system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+  a{color:var(--primary)}
+
+  /* ===== 站台表頭 ===== */
+  .site-head{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+  .site-head .in{max-width:1400px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;flex-direction:column;text-decoration:none;color:var(--primary);line-height:1.2}
+  .brand b{font-size:24px;letter-spacing:4px}
+  .brand small{font-size:12px;color:var(--muted);letter-spacing:2px}
+  .site-head nav a{margin-left:20px;text-decoration:none;color:var(--text);font-weight:500}
+  .site-head nav a:hover{color:var(--primary)}
+
+  h1.page-title{text-align:center;color:var(--primary);font-size:28px;margin:28px 0 6px;letter-spacing:2px}
+  .page-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px}
+
+  /* ===== 主版面 ===== */
+  .wrap{max-width:1400px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px}
+  .card h2{font-size:18px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sec{color:var(--primary);font-weight:700;font-size:15px;margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center}
+  .sec:first-of-type{margin-top:4px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .field{display:flex;flex-direction:column;gap:4px;position:relative}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:13px;color:var(--muted)}
+  input,select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);width:100%}
+  input:focus,select:focus{outline:2px solid var(--primary-light);border-color:var(--primary)}
+  input.auto{background:#f3f7f7;color:var(--primary)}
+  .hint{font-size:12px;color:var(--muted);min-height:16px}
+  .hint.err{color:var(--danger)}
+  .spin{position:absolute;right:10px;top:31px;width:16px;height:16px;border:2px solid var(--primary-light);border-top-color:var(--primary);border-radius:50%;animation:sp .7s linear infinite;display:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .btn{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--primary);background:#fff;color:var(--primary);padding:6px 14px;font-size:14px}
+  .btn:hover{background:var(--primary-light)}
+  .btn-main{width:100%;margin-top:20px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;padding:12px;border:none}
+  .btn-main:hover{background:var(--primary-hover)}
+  .btn-main:disabled{opacity:.6;cursor:wait}
+
+  .rows-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
+  table.rows{width:100%;border-collapse:collapse;min-width:820px;font-size:13px}
+  table.rows th{background:var(--primary-light);color:var(--primary);font-weight:500;padding:6px 4px;white-space:nowrap}
+  table.rows td{padding:4px 3px;border-top:1px solid var(--border)}
+  table.rows input,table.rows select{padding:6px 6px;font-size:13px}
+  table.rows .del{border:none;background:none;color:var(--danger);cursor:pointer;font-size:18px;padding:0 6px}
+  .col-type{width:62px}.col-date{width:132px}.col-no{width:118px}.col-qty{width:68px}.col-price{width:84px}.col-amt{width:96px}.col-note{width:78px}
+  .rows-tip{font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* ===== 預覽 ===== */
+  .pv-card{position:sticky;top:76px;padding:12px}
+  .pv-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:8px}
+  .pv-head b{color:var(--text)}
+  #previewScroll{max-height:calc(100vh - 150px);overflow-y:auto;background:#e9edef;border-radius:6px;padding:10px}
+  .a4-fit{margin:0 auto 12px;overflow:hidden}
+  .a4-fit:last-child{margin-bottom:0}
+  .a4-fit>.a4{transform-origin:top left;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  #pvToggle{display:none}
+  .pv-card.collapsed #previewScroll{display:none}
+
+  /* ===== 證明單本體 (以 96dpi A4 = 794 x 1123 px 繪製) ===== */
+  .a4{width:794px;height:1123px;background:#fff;color:#111;font-family:'Noto Sans TC',sans-serif}
+  .a5{width:794px;height:561px;padding:26px 30px 18px 34px;display:flex;gap:10px;position:relative}
+  .a5.top{border-bottom:1px dashed #999}
+  .a5.c1{background:#fffef4}.a5.c2{background:#f6fbff}.a5.c3{background:#fff7f7}.a5.c4{background:#f7fff6}
+  .a5 .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .a5 .copy{width:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;line-height:1.18;font-weight:500}
+  .a5 .copy span{display:block}
+  .a5 table{border-collapse:collapse}
+  .a5 td,.a5 th{border:1px solid #333;font-weight:400}
+  .f-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .seller{font-size:11px}
+  .seller td{height:30px;padding:0 6px}
+  .seller .vlab{width:22px;padding:2px 0;text-align:center;line-height:1.15;font-size:10.5px}
+  .seller .vlab span{display:block}
+  .seller .lab{width:68px;text-align:center;line-height:1.2;font-size:10.5px}
+  .seller .val{width:270px}
+  .taxgrid{display:flex;height:22px}
+  .taxcell{width:24px;border:1px solid #555;margin-right:-1px;text-align:center;font-family:monospace;font-size:14px;line-height:20px;font-weight:700}
+  .f-title{text-align:center;padding-top:10px}
+  .f-title .t{font-size:17px;font-weight:700;letter-spacing:1px;border-bottom:2px solid #111;padding-bottom:4px}
+  .f-title .d{font-size:12px;margin-top:8px}
+  .detail{width:100%;font-size:10.5px;table-layout:fixed}
+  .detail th{background:rgba(0,0,0,.035);padding:2px 1px;line-height:1.2;text-align:center}
+  .detail td{height:21px;padding:0 2px;text-align:center;white-space:nowrap;overflow:hidden}
+  .detail td.l{text-align:left;padding-left:4px}
+  .detail td.r{text-align:right;padding-right:4px}
+  .detail tr.sum td{font-weight:700;height:23px}
+  .f-foot{display:flex;justify-content:space-between;margin-top:12px;font-size:11.5px;gap:14px}
+  .f-foot .buyer div{margin-bottom:5px}
+  .f-foot .buyer b{font-weight:500;display:inline-block;min-width:60px}
+  .stamp{width:150px;height:72px;border:1px dashed #777;display:flex;align-items:flex-end;justify-content:center;font-size:10.5px;color:#555;padding-bottom:4px;flex-shrink:0}
+  .f-state{font-size:11px;margin-top:auto;padding-top:6px}
+
+  /* ===== 說明文章 ===== */
+  .article{max-width:900px;margin:10px auto 40px;padding:0 20px}
+  .article .card{padding:28px 32px}
+  .article h2{font-size:21px;color:var(--primary);margin:28px 0 10px;padding-left:10px;border-left:4px solid var(--accent)}
+  .article h2:first-child{margin-top:0}
+  .article h3{font-size:16px;margin:16px 0 6px}
+  .article p,.article li{font-size:15px;margin-bottom:8px}
+  .article ul{padding-left:22px}
+  .note-box{background:var(--primary-light);border-radius:8px;padding:12px 16px;font-size:14px;margin:12px 0}
+  .privacy{font-size:13px;color:var(--muted);text-align:center;margin-top:10px}
+
+  footer{background:var(--primary);color:#e3eeee;text-align:center;padding:26px 20px;font-size:14px}
+  footer b{color:#fff;font-size:17px;letter-spacing:3px;display:block;margin-bottom:6px}
+
+  #renderHost{position:absolute;left:-10000px;top:0}
+  .act{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+  .act .btn-main{margin-top:0;min-height:48px}
+  .btn-alt{background:#fff;color:var(--primary);border:2px solid var(--primary)}
+  .btn-alt:hover{background:var(--primary-light)}
+  .act-tip{font-size:12.5px;color:var(--muted);margin-top:8px}
+  #printArea{display:none}
+  @page{size:A4 portrait;margin:0}
+  @media print{
+    html,body{background:#fff!important;padding:0!important;margin:0!important}
+    body>*:not(#printArea){display:none!important}
+    #printArea{display:block!important}
+    #printArea .a4{width:210mm;height:297mm;overflow:hidden;page-break-after:always;break-after:page;zoom:.99}
+    #printArea .a4:last-child{page-break-after:auto;break-after:auto}
+    #printArea .a5{width:210mm;height:148.5mm}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  @media (max-width:560px){.act{grid-template-columns:1fr}}
+
+  @media (max-width:1024px){
+    .wrap{grid-template-columns:1fr}
+    .pv-card{position:static;order:-1}
+    #pvToggle{display:inline-block}
+    #previewScroll{max-height:none}
+    .site-head nav{display:none}
+  }
+  @media (max-width:560px){
+    .grid2{grid-template-columns:1fr}
+    .card{padding:14px}
+    h1.page-title{font-size:23px}
+    .article .card{padding:20px 18px}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="in">
+    <a class="brand" href="/">
+      <b>洪瑄璟</b>
+      <small>稅務記帳士事務所</small>
+    </a>
+    <nav>
+      <a href="/">首頁</a>
+      <a href="#guide">折讓單說明</a>
+      <a href="#faq">常見問題</a>
+    </nav>
+  </div>
+</header>
+
+<h1 class="page-title">折讓單產生器</h1>
+<p class="page-sub">輸入統編自動帶入公司資料，金額稅額自動計算，一鍵產生可列印的折讓證明單 PDF</p>
+
+<main class="wrap">
+  <!-- ===== 左：表單 ===== -->
+  <section class="card">
+    <h2>📝 填寫折讓單資料</h2>
+
+    <div class="sec">原開立銷貨發票單位（賣方）</div>
+    <div class="grid2">
+      <div class="field">
+        <label for="sellerTaxId">統一編號</label>
+        <input id="sellerTaxId" inputmode="numeric" maxlength="8" placeholder="輸入 8 碼自動帶入">
+        <div class="spin" id="sellerSpinner"></div>
+        <div class="hint" id="sellerHint"></div>
+      </div>
+      <div class="field">
+        <label for="sellerName">公司／行號名稱</label>
+        <input id="sellerName" placeholder="公司名稱">
+      </div>
+      <div class="field full">
+        <label for="sellerAddr">營業所在地址</label>
+        <input id="sellerAddr" placeholder="請輸入營業地址">
+      </div>
+    </div>
+
+    <div class="sec">基本資訊</div>
+    <div class="grid2">
+      <div class="field">
+        <label for="notaDate">折讓單開立日期</label>
+        <input id="notaDate" type="date">
+      </div>
+      <div class="field">
+        <label for="copyType">下載格式</label>
+        <select id="copyType">
+          <option value="4">四聯（2 張 A4）</option>
+          <option value="2">二聯（1 張 A4）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sec">發票折讓明細 <button type="button" class="btn" id="btnAdd">＋ 新增</button></div>
+    <div class="rows-wrap">
+      <table class="rows">
+        <thead>
+          <tr>
+            <th class="col-type">聯式</th>
+            <th class="col-date">發票日期</th>
+            <th class="col-no">發票號碼</th>
+            <th>品名</th>
+            <th class="col-qty">數量</th>
+            <th class="col-price">單價</th>
+            <th class="col-amt">未稅金額</th>
+            <th class="col-note">課稅別</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rowsBody"></tbody>
+      </table>
+    </div>
+    <p class="rows-tip">數量、單價、未稅金額任填兩格，第三格自動算出；應稅項目營業稅額以 5% 計算。明細最多 7 列。</p>
+
+    <div class="sec">原進貨營業人或買受人（買方）</div>
+    <div class="grid2">
+      <div class="field">
+        <label for="buyerTaxId">統一編號／身分證字號</label>
+        <input id="buyerTaxId" maxlength="10" placeholder="公司統編 8 碼自動帶入">
+        <div class="spin" id="buyerSpinner"></div>
+        <div class="hint" id="buyerHint"></div>
+      </div>
+      <div class="field">
+        <label for="buyerName">名稱</label>
+        <input id="buyerName" placeholder="公司抬頭或姓名">
+      </div>
+      <div class="field full">
+        <label for="buyerAddr">聯絡地址</label>
+        <input id="buyerAddr" placeholder="請輸入地址">
+      </div>
+    </div>
+
+    <div class="act">
+      <button type="button" class="btn-main" id="pdfBtn">⬇ 下載 PDF</button>
+      <button type="button" class="btn-main btn-alt" id="printBtn">🖨 直接列印</button>
+    </div>
+    <p class="act-tip">手機也能用：「下載 PDF」可存檔或用 LINE／Email 傳出；「直接列印」會叫出手機或電腦的列印畫面，可選印表機或另存 PDF。</p>
+    <p class="privacy">🔒 所有資料只在您的瀏覽器中計算與產生 PDF，不會上傳或儲存。（僅查詢統編時會向公開資料 API 送出統編號碼）</p>
+  </section>
+
+  <!-- ===== 右：即時預覽 ===== -->
+  <section class="card pv-card" id="pvCard">
+    <div class="pv-head">
+      <b>👁 即時預覽</b>
+      <span>A4 直式／每頁上下各一聯（A5）</span>
+      <button type="button" class="btn" id="pvToggle">收合預覽</button>
+    </div>
+    <div id="previewScroll"></div>
+  </section>
+</main>
+
+<!-- ===== 說明文章 ===== -->
+<section class="article" id="guide">
+  <div class="card">
+    <h2>什麼情況需要開折讓單？</h2>
+    <p>發票開出去之後，如果客戶退貨、或是事後給了價格折扣，就要處理已開出的發票金額。處理方式取決於這張發票是否已經申報營業稅：</p>
+    <ul>
+      <li><b>還沒申報：</b>可以直接收回作廢，再重新開立正確的發票。</li>
+      <li><b>已經申報：</b>發票不能再作廢，必須改用「營業人銷貨退回進貨退出或折讓證明單」（俗稱折讓單）沖減金額。</li>
+    </ul>
+    <p>實務上通常由賣方填好折讓單交給買方，買方確認後簽章再交回賣方留存。</p>
+
+    <h2>申報期限要注意</h2>
+    <ul>
+      <li><b>買方（進貨退出或折讓）：</b>應在發生的當期申報，扣減進項稅額。漏報可能被補稅並處罰。</li>
+      <li><b>賣方（銷貨退回或折讓）：</b>可以在發生當期或下一期申報，扣減銷項稅額。</li>
+    </ul>
+
+    <h2>折讓單怎麼填？</h2>
+    <ul>
+      <li><b>日期：</b>填折讓單實際開立的日期，不是原發票的日期。</li>
+      <li><b>左上方：</b>填原開立發票的賣方名稱、統一編號與營業地址。</li>
+      <li><b>中間明細：</b>逐列填寫原發票的聯式、開立日期、發票號碼，以及退貨或折讓的品名、數量、單價與未稅金額。同一張折讓單可列多張發票、多個品項。</li>
+      <li><b>課稅別：</b>依原發票勾選應稅、零稅率或免稅。</li>
+      <li><b>下方：</b>填買方名稱、統編（個人填身分證字號）與地址，並由買方蓋章或簽名。</li>
+    </ul>
+
+    <h2>蓋章與收回發票</h2>
+    <h3>三聯式發票</h3>
+    <p>由買方在折讓單上蓋統一發票專用章（或公司章），再交回賣方。</p>
+    <h3>二聯式發票（買方為個人或機關）</h3>
+    <p>原則上要收回買方持有的原發票收執聯；若無法收回，折讓單須載明買方身分證字號、地址並由買方簽名或蓋章。建議同時保留聯絡資料備查。</p>
+
+    <h2>四聯如何分送？</h2>
+    <ul>
+      <li>第一聯：交付原銷貨人，作為銷項稅額扣減憑證。</li>
+      <li>第二聯：交付原銷貨人，作為記帳憑證。</li>
+      <li>第三聯：由進貨人留存，作為進項稅額扣減憑證。</li>
+      <li>第四聯：由進貨人留存，作為記帳憑證。</li>
+    </ul>
+    <p>簡單記：前兩聯給賣方，後兩聯給買方。</p>
+
+    <h2>電子發票的折讓</h2>
+    <p>雙方事先約定同意後，電子發票的折讓可透過電子發票平台以電子方式開立與確認，不必另印紙本。約定的書面或電子紀錄請妥善保存（至少五年）。</p>
+    <div class="note-box">以上為一般性說明，實際規定以財政部及國稅局最新公告為準。個案情況歡迎直接諮詢洪瑄璟稅務記帳士事務所。</div>
+
+    <h2 id="faq">常見問題</h2>
+    <h3>Q：發票已經申報了，但金額開錯想重開，怎麼處理？</h3>
+    <p>先就原發票全額開立折讓單並取得買方簽章，再以重開當天的日期開立新發票，並在備註欄註明「重開」及原發票號碼，方便日後查核。</p>
+    <h3>Q：輸入的資料會被儲存嗎？</h3>
+    <p>不會。所有計算與 PDF 產生都在您自己的瀏覽器中完成，關閉頁面即消失。只有在輸入 8 碼統編時，會向公開的公司登記資料 API 查詢名稱與地址。</p>
+    <h3>Q：買方是個人可以用嗎？</h3>
+    <p>可以。買方欄位輸入身分證字號，系統會自動檢查格式，證明單上的欄名也會自動改為「身分證統一編號」。</p>
+  </div>
+</section>
+
+<footer>
+  <b>洪瑄璟稅務記帳士事務所</b>
+  <!-- 在此補上事務所地址、電話、營業時間等聯絡資訊 -->
+  <div>© <span id="yr"></span> 洪瑄璟稅務記帳士事務所 版權所有</div>
+</footer>
+
+<div id="renderHost"></div>
+<div id="printArea"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const COPY_TEXT = {
+    1: '第一聯：交付原銷貨人作為銷項稅額之扣減憑證。',
+    2: '第二聯：交付原銷貨人作為記帳憑證。',
+    3: '第三聯：由進貨人作為進項稅額之扣減憑證。',
+    4: '第四聯：由進貨人作為記帳憑證。'
+  };
+  const MAX_ROWS = 7;
+  const MIN_PRINT_ROWS = 5;
+  let rows = [];
+  let seq = 0;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = v => { const n = parseFloat(String(v).replace(/,/g, '')); return isFinite(n) ? n : NaN; };
+  const fmt = n => n.toLocaleString('en-US', { maximumFractionDigits: 6 });
+  const vchars = s => [...s].map(c => `<span>${esc(c)}</span>`).join('');
+
+  // 用最少小數位，使「結果 × 除數」四捨五入後剛好等於被除數，三格才對得起來
+  function solve(a, b) {
+    for (let d = 0; d < 6; d++) {
+      const v = Math.round(a / b * 10 ** d) / 10 ** d;
+      if (Math.round(v * b) === Math.round(a)) return v;
+    }
+    return Math.round(a / b * 1e6) / 1e6;
+  }
+
+  // ===== 明細列 =====
+  function addRow(init = {}) {
+    if (rows.length >= MAX_ROWS) { flash(`明細最多 ${MAX_ROWS} 列`); return; }
+    rows.push(Object.assign({ id: ++seq, type: '三', date: '', no: '', item: '', qty: '', price: '', amt: '', note: '應稅', user: [], auto: null }, init));
+    renderRows(); sync();
+  }
+  function delRow(id) {
+    rows = rows.filter(r => r.id !== id);
+    if (!rows.length) addRow(); else { renderRows(); sync(); }
+  }
+
+  // 使用者填了哪兩格，就算第三格
+  function derivedField(r) {
+    const u = r.user;
+    const has = f => u.includes(f);
+    const n = ['qty', 'price', 'amt'].filter(has).length;
+    if (n < 2) return null;
+    if (n === 3) return u[0]; // 三格都填，最早填的那格讓位重算
+    return ['qty', 'price', 'amt'].find(f => !has(f));
+  }
+  function recalc(r) {
+    let d = derivedField(r);
+    if (d && r.user.includes(d)) r.user = r.user.filter(f => f !== d);
+    r.auto = d;
+    if (!d) return;
+    const q = num(r.qty), p = num(r.price), a = num(r.amt);
+    if (d === 'amt') r.amt = (!isNaN(q) && !isNaN(p)) ? fmt(Math.round(q * p)) : '';
+    if (d === 'price') r.price = (q && !isNaN(a)) ? fmt(solve(a, q)) : '';
+    if (d === 'qty') r.qty = (p && !isNaN(a)) ? fmt(solve(a, p)) : '';
+  }
+
+  function renderRows() {
+    $('rowsBody').innerHTML = rows.map(r => `
+      <tr data-id="${r.id}">
+        <td><select data-k="type"><option${r.type==='三'?' selected':''}>三</option><option${r.type==='二'?' selected':''}>二</option></select></td>
+        <td><input type="date" data-k="date" value="${esc(r.date)}"></td>
+        <td><input data-k="no" maxlength="11" placeholder="AB12345678" value="${esc(r.no)}"></td>
+        <td><input data-k="item" placeholder="品名" value="${esc(r.item)}"></td>
+        <td><input data-f="qty" inputmode="decimal" value="${esc(r.qty)}" class="${r.auto==='qty'?'auto':''}" placeholder="${r.auto==='qty'?'自動':''}"></td>
+        <td><input data-f="price" inputmode="decimal" value="${esc(r.price)}" class="${r.auto==='price'?'auto':''}" placeholder="${r.auto==='price'?'自動':''}"></td>
+        <td><input data-f="amt" inputmode="decimal" value="${esc(r.amt)}" class="${r.auto==='amt'?'auto':''}" placeholder="${r.auto==='amt'?'自動':''}"></td>
+        <td><select data-k="note">${['應稅','零稅率','免稅'].map(o=>`<option${r.note===o?' selected':''}>${o}</option>`).join('')}</select></td>
+        <td><button type="button" class="del" title="刪除">×</button></td>
+      </tr>`).join('');
+  }
+
+  $('rowsBody').addEventListener('input', e => {
+    const tr = e.target.closest('tr'); if (!tr) return;
+    const r = rows.find(x => x.id === +tr.dataset.id); if (!r) return;
+    const el = e.target;
+    if (el.dataset.k) {
+      r[el.dataset.k] = el.dataset.k === 'no' ? el.value.toUpperCase() : el.value;
+    } else if (el.dataset.f) {
+      const f = el.dataset.f;
+      r[f] = el.value;
+      r.user = r.user.filter(x => x !== f);
+      if (el.value.trim() !== '') r.user.push(f);
+      if (r.auto === f) r.auto = null;
+      recalc(r);
+      // 只更新另外兩格，避免重畫整列讓游標跳掉
+      tr.querySelectorAll('input[data-f]').forEach(x => {
+        const k = x.dataset.f;
+        if (x !== el) x.value = r[k];
+        x.classList.toggle('auto', r.auto === k);
+        x.placeholder = r.auto === k ? '自動' : '';
+      });
+    }
+    sync();
+  });
+  $('rowsBody').addEventListener('change', e => {
+    if (e.target.dataset.k === 'no') e.target.value = e.target.value.toUpperCase();
+  });
+  $('rowsBody').addEventListener('click', e => {
+    if (!e.target.classList.contains('del')) return;
+    delRow(+e.target.closest('tr').dataset.id);
+  });
+  $('btnAdd').addEventListener('click', () => addRow());
+
+  // ===== 統編／身分證檢查 =====
+  function taxIdValid(v) {
+    if (!/^\d{8}$/.test(v)) return false;
+    const w = [1, 2, 1, 2, 1, 2, 4, 1];
+    let sum = 0;
+    for (let i = 0; i < 8; i++) { const p = +v[i] * w[i]; sum += Math.floor(p / 10) + (p % 10); }
+    return sum % 5 === 0 || (v[6] === '7' && (sum + 1) % 5 === 0);
+  }
+  const ID_LETTER = {A:10,B:11,C:12,D:13,E:14,F:15,G:16,H:17,I:34,J:18,K:19,L:20,M:21,N:22,O:35,P:23,Q:24,R:25,S:26,T:27,U:28,V:29,W:32,X:30,Y:31,Z:33};
+  function personIdValid(v) {
+    if (!/^[A-Z][12890ABCD]\d{8}$/.test(v)) return false;
+    const code = ID_LETTER[v[0]];
+    const second = /\d/.test(v[1]) ? +v[1] : ID_LETTER[v[1]] % 10;
+    const digits = [Math.floor(code / 10), code % 10, second, ...v.slice(2).split('').map(Number)];
+    const w = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1];
+    return digits.reduce((s, d, i) => s + d * w[i], 0) % 10 === 0;
+  }
+  function idProblem(v, allowPerson) {
+    if (!v) return '';
+    if (/^\d+$/.test(v)) {
+      if (v.length !== 8) return '統一編號為 8 碼數字';
+      return taxIdValid(v) ? '' : '統一編號檢查碼不符，請再確認';
+    }
+    if (!allowPerson) return '統一編號為 8 碼數字';
+    if (!/^[A-Z][12890ABCD]\d{8}$/.test(v)) return '身分證字號為 1 個英文字母加 9 碼';
+    return personIdValid(v) ? '' : '身分證字號檢查碼不符，請再確認';
+  }
+
+  const lastLookup = { seller: '', buyer: '' };
+  async function onTaxId(role) {
+    const inp = $(`${role}TaxId`);
+    const v = inp.value.trim().toUpperCase();
+    if (inp.value !== v) inp.value = v;
+    const hint = $(`${role}Hint`);
+    const prob = idProblem(v, role === 'buyer');
+    hint.textContent = prob; hint.className = 'hint' + (prob ? ' err' : '');
+    if (role === 'buyer') $('buyerName').placeholder = /^[A-Z]/.test(v) ? '買受人姓名' : '公司抬頭或姓名';
+    sync();
+    // 只查 8 碼統編；身分證字號不送出
+    if (!/^\d{8}$/.test(v) || prob || lastLookup[role] === v) return;
+    lastLookup[role] = v;
+    const sp = $(`${role}Spinner`); sp.style.display = 'block';
+    try {
+      const res = await fetch(`https://company.g0v.ronny.tw/api/show/${v}`);
+      const json = await res.json();
+      const d = json && json.data;
+      if (!d) { hint.textContent = '查無登記資料，請手動填寫'; return; }
+      let name = d['公司名稱'] || d['商業名稱'] || d['名稱'] || '';
+      if (Array.isArray(name)) name = name[0];
+      const addr = d['公司所在地'] || d['地址'] || d['營業地址'] || '';
+      if (name) $(`${role}Name`).value = name;
+      if (addr) $(`${role}Addr`).value = addr;
+      hint.textContent = name ? '已自動帶入，請確認是否正確' : '查無名稱，請手動填寫';
+    } catch (e) {
+      hint.textContent = '查詢失敗，請手動填寫';
+      lastLookup[role] = '';
+    } finally {
+      sp.style.display = 'none';
+      sync();
+    }
+  }
+  ['seller', 'buyer'].forEach(role => {
+    $(`${role}TaxId`).addEventListener('input', () => onTaxId(role));
+  });
+  ['sellerName', 'sellerAddr', 'buyerName', 'buyerAddr', 'notaDate', 'copyType'].forEach(id => {
+    $(id).addEventListener('input', sync);
+    $(id).addEventListener('change', sync);
+  });
+
+  // ===== 證明單 HTML =====
+  function taxGrid(val) {
+    const s = (val || '').padEnd(8, ' ').slice(0, 8);
+    return `<div class="taxgrid">${[...s].map(c => `<div class="taxcell">${esc(c)}</div>`).join('')}</div>`;
+  }
+  function fmtDate(v, sep) {
+    if (!v) return '';
+    const [y, m, d] = v.split('-');
+    return sep ? `${y}${sep}${m}${sep}${d}` : `${y}年${m}月${d}日`;
+  }
+
+  function buildA5(copyNum, pos) {
+    const V = id => $(id).value.trim();
+    const sellerName = V('sellerName'), sellerTaxId = V('sellerTaxId'), sellerAddr = V('sellerAddr');
+    const buyerName = V('buyerName'), buyerTaxId = V('buyerTaxId').toUpperCase(), buyerAddr = V('buyerAddr');
+    const buyerIdLabel = /^[A-Z]/.test(buyerTaxId) ? '身分證統一編號' : '營利事業統一編號';
+
+    let totalAmt = 0, totalTax = 0, body = '';
+    const n = Math.max(rows.length, MIN_PRINT_ROWS);
+    for (let i = 0; i < n; i++) {
+      const r = rows[i];
+      if (!r) { body += '<tr>' + '<td></td>'.repeat(11) + '</tr>'; continue; }
+      const qty = num(r.qty), price = num(r.price);
+      const amt = Math.round(num(r.amt) || 0);
+      const taxed = r.note === '應稅';
+      const tax = taxed ? Math.round(amt * 0.05) : 0;
+      totalAmt += amt; totalTax += tax;
+      const empty = !r.date && !r.no && !r.item && !amt;
+      body += `<tr>
+        <td>${empty ? '' : esc(r.type)}</td>
+        <td>${esc(fmtDate(r.date, '/'))}</td>
+        <td style="font-family:monospace;font-weight:700">${esc((r.no || '').replace(/-/g, ''))}</td>
+        <td class="l">${esc(r.item)}</td>
+        <td>${isNaN(qty) ? '' : fmt(qty)}</td>
+        <td class="r">${isNaN(price) ? '' : fmt(price)}</td>
+        <td class="r">${amt ? amt.toLocaleString() : ''}</td>
+        <td class="r">${taxed && !empty ? tax.toLocaleString() : ''}</td>
+        <td>${!empty && taxed ? '✓' : ''}</td>
+        <td>${!empty && r.note === '零稅率' ? '✓' : ''}</td>
+        <td>${!empty && r.note === '免稅' ? '✓' : ''}</td>
+      </tr>`;
+    }
+
+    const nameFs = sellerName.length > 22 ? 9.5 : sellerName.length > 16 ? 10.5 : 12;
+    const addrFs = sellerAddr.length > 34 ? 8.5 : sellerAddr.length > 24 ? 9.5 : 10.5;
+
+    return `
+    <div class="a5 c${copyNum}${pos === 'top' ? ' top' : ''}">
+      <div class="main">
+        <div class="f-head">
+          <table class="seller">
+            <tr>
+              <td class="vlab" rowspan="3">${vchars('原開立銷貨發票單位')}</td>
+              <td class="lab">名　　稱</td>
+              <td class="val" style="font-size:${nameFs}px;font-weight:700">${esc(sellerName)}</td>
+            </tr>
+            <tr>
+              <td class="lab">營利事業<br>統一編號</td>
+              <td class="val">${taxGrid(sellerTaxId)}</td>
+            </tr>
+            <tr>
+              <td class="lab">營業所在<br>地　　址</td>
+              <td class="val" style="font-size:${addrFs}px">${esc(sellerAddr)}</td>
+            </tr>
+          </table>
+          <div class="f-title">
+            <div class="t">營業人銷貨退回進貨退出或折讓證明單</div>
+            <div class="d">折讓單日期：${esc(fmtDate($('notaDate').value))}</div>
+          </div>
+        </div>
+
+        <table class="detail">
+          <colgroup>
+            <col style="width:30px"><col style="width:74px"><col style="width:92px"><col>
+            <col style="width:44px"><col style="width:56px"><col style="width:74px"><col style="width:58px">
+            <col style="width:24px"><col style="width:24px"><col style="width:24px">
+          </colgroup>
+          <tr><th colspan="3">開　立　發　票</th><th colspan="5">退　貨　或　折　讓　內　容</th><th colspan="3">課稅別<br>(打✓處)</th></tr>
+          <tr><th>聯<br>式</th><th>發票開立<br>日期</th><th>發票號碼</th><th>品　　名</th><th>數量</th><th>單價</th><th>金　額<br>(不含稅額)</th><th>營業<br>稅額</th><th>應<br>稅</th><th>零<br>稅<br>率</th><th>免<br>稅</th></tr>
+          ${body}
+          <tr class="sum"><td colspan="6">合　　　　計</td><td class="r">${totalAmt.toLocaleString()}</td><td class="r">${totalTax.toLocaleString()}</td><td colspan="3"></td></tr>
+        </table>
+
+        <div class="f-foot">
+          <div class="buyer">
+            <div><b>原進貨營業人（或買受人）名稱：</b>${esc(buyerName)}</div>
+            <div><b>${buyerIdLabel}：</b><span style="font-family:monospace;font-weight:700;letter-spacing:1px">${esc(buyerTaxId)}</span></div>
+            <div><b>聯絡地址：</b>${esc(buyerAddr)}</div>
+          </div>
+          <div class="stamp">（蓋章或簽名）</div>
+        </div>
+        <div class="f-state">本證明單所列銷貨退回、進貨退出或折讓，確屬事實，特此證明。</div>
+      </div>
+      <div class="copy">${vchars(COPY_TEXT[copyNum])}</div>
+    </div>`;
+  }
+  const buildA4 = (a, b) => `<div class="a4">${buildA5(a, 'top')}${buildA5(b, 'bottom')}</div>`;
+  const pagesFor = count => count === 4 ? [[1, 2], [3, 4]] : [[1, 3]];
+
+  // ===== 預覽 =====
+  let syncQueued = false;
+  function sync() {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => {
+      syncQueued = false;
+      const box = $('previewScroll');
+      const st = box.scrollTop;
+      box.innerHTML = pagesFor(+$('copyType').value)
+        .map(([a, b]) => `<div class="a4-fit">${buildA4(a, b)}</div>`).join('');
+      fitPreview();
+      box.scrollTop = st;
+    });
+  }
+  function fitPreview() {
+    const box = $('previewScroll');
+    const w = box.clientWidth - 20;
+    if (w <= 0) return;
+    const s = Math.min(1, w / 794);
+    box.querySelectorAll('.a4-fit').forEach(f => {
+      f.style.width = 794 * s + 'px';
+      f.style.height = 1123 * s + 'px';
+      f.firstElementChild.style.transform = `scale(${s})`;
+    });
+  }
+  window.addEventListener('resize', fitPreview);
+
+  $('pvToggle').addEventListener('click', () => {
+    const c = $('pvCard').classList.toggle('collapsed');
+    $('pvToggle').textContent = c ? '展開預覽' : '收合預覽';
+    if (!c) fitPreview();
+  });
+
+  // ===== PDF =====
+  async function makePdf() {
+    const btn = $('pdfBtn');
+    if (!window.html2canvas || !window.jspdf) { flash('PDF 元件載入失敗，請重新整理頁面'); return; }
+    const bp = idProblem($('buyerTaxId').value.trim().toUpperCase(), true);
+    if (bp && !confirmSoft(`買方${bp}，仍要產生嗎？`)) return;
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '⏳ PDF 產生中…';
+    const host = $('renderHost');
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pages = pagesFor(+$('copyType').value);
+      for (let i = 0; i < pages.length; i++) {
+        host.innerHTML = buildA4(...pages[i]);
+        const el = host.firstElementChild;
+        await new Promise(r => setTimeout(r, 120));
+        const canvas = await html2canvas(el, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, windowWidth: 1200 });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+      }
+      const who = ($('buyerName').value.trim() || '折讓單').replace(/[\\/:*?"<>|]/g, '');
+      const d = $('notaDate').value.replace(/-/g, '');
+      const fname = `折讓單_${who}${d ? '_' + d : ''}.pdf`;
+      const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent);
+      if (inApp) {
+        // LINE／FB 內建瀏覽器常擋下載，改開新分頁顯示 PDF，再用「分享」或「列印」
+        const url = URL.createObjectURL(pdf.output('blob'));
+        location.href = url;
+        flash('若沒有自動下載，請點右上角用 Safari／Chrome 開啟');
+      } else {
+        pdf.save(fname);
+      }
+    } catch (e) {
+      console.error(e);
+      flash('PDF 產生失敗，請再試一次');
+    } finally {
+      host.innerHTML = '';
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  }
+  $('pdfBtn').addEventListener('click', makePdf);
+
+  // ===== 直接列印（手機、電腦都可，走系統列印對話框）=====
+  function doPrint() {
+    const pa = $('printArea');
+    pa.innerHTML = pagesFor(+$('copyType').value).map(([a, b]) => buildA4(a, b)).join('');
+    const go = () => { try { window.print(); } catch (e) { flash('此瀏覽器不支援列印，請改用「下載 PDF」'); } };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(go, 80)); else setTimeout(go, 80);
+  }
+  window.addEventListener('afterprint', () => { $('printArea').innerHTML = ''; });
+  $('printBtn').addEventListener('click', doPrint);
+
+  // 不用 alert/confirm 擋畫面，用頁內提示
+  function flash(msg) {
+    let t = $('toast');
+    if (!t) {
+      t = document.createElement('div'); t.id = 'toast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#24323d;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:99;transition:opacity .3s';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = '0', 2600);
+  }
+  let pendingConfirm = '';
+  function confirmSoft(msg) {
+    if (pendingConfirm === msg) { pendingConfirm = ''; return true; }
+    pendingConfirm = msg;
+    flash(msg + '（再按一次下載即可）');
+    return false;
+  }
+
+  // ===== 初始化 =====
+  $('notaDate').valueAsDate = new Date();
+  $('yr').textContent = new Date().getFullYear();
+  addRow();
+})();
+</script>
+</body>
+</html>
