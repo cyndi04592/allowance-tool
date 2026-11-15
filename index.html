@@ -135,6 +135,10 @@
   .act .btn-main{margin-top:0;min-height:48px}
   .btn-alt{background:#fff;color:var(--primary);border:2px solid var(--primary)}
   .btn-alt:hover{background:var(--primary-light)}
+  .act-sub{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px}
+  .btn-sub{font:inherit;font-size:14px;cursor:pointer;min-height:44px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);padding:8px 10px}
+  .btn-sub:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+  .btn-sub:disabled{opacity:.6;cursor:wait}
   .act-tip{font-size:12.5px;color:var(--muted);margin-top:8px}
   #printArea{display:none}
   @page{size:A4 portrait;margin:0}
@@ -264,7 +268,12 @@
       <button type="button" class="btn-main" id="pdfBtn">⬇ 下載 PDF</button>
       <button type="button" class="btn-main btn-alt" id="printBtn">🖨 直接列印</button>
     </div>
-    <p class="act-tip">手機也能用：「下載 PDF」可存檔或用 LINE／Email 傳出；「直接列印」會叫出手機或電腦的列印畫面，可選印表機或另存 PDF。</p>
+    <div class="act act-sub">
+      <button type="button" class="btn-sub" id="shareBtn">📤 分享到 LINE／Email</button>
+      <button type="button" class="btn-sub" id="imgBtn">🖼 存成圖片</button>
+      <button type="button" class="btn-sub" id="csvBtn">📊 匯出 Excel</button>
+    </div>
+    <p class="act-tip">手機也能用：「分享」可直接傳 PDF 到 LINE、Email 或雲端硬碟；「存成圖片」可存進相簿；「直接列印」會叫出列印畫面，可選印表機或另存 PDF；「匯出 Excel」可把明細帶進記帳或報表。</p>
     <p class="privacy">🔒 所有資料只在您的瀏覽器中計算與產生 PDF，不會上傳或儲存。（僅查詢統編時會向公開資料 API 送出統編號碼）</p>
   </section>
 
@@ -328,7 +337,7 @@
     <h3>Q：發票已經申報了，但金額開錯想重開，怎麼處理？</h3>
     <p>先就原發票全額開立折讓單並取得買方簽章，再以重開當天的日期開立新發票，並在備註欄註明「重開」及原發票號碼，方便日後查核。</p>
     <h3>Q：輸入的資料會被儲存嗎？</h3>
-    <p>不會。所有計算與 PDF 產生都在您自己的瀏覽器中完成，關閉頁面即消失。只有在輸入 8 碼統編時，會向公開的公司登記資料 API 查詢名稱與地址。</p>
+    <p>不會。所有計算、PDF、圖片與 Excel 匯出都在您自己的瀏覽器中完成，關閉頁面即消失。只有在輸入 8 碼統編時，會向公開的公司登記資料 API 查詢名稱與地址。</p>
     <h3>Q：買方是個人可以用嗎？</h3>
     <p>可以。買方欄位輸入身分證字號，系統會自動檢查格式，證明單上的欄名也會自動改為「身分證統一編號」。</p>
   </div>
@@ -652,50 +661,129 @@
   });
 
   // ===== PDF =====
-  async function makePdf() {
-    const btn = $('pdfBtn');
-    if (!window.html2canvas || !window.jspdf) { flash('PDF 元件載入失敗，請重新整理頁面'); return; }
-    const bp = idProblem($('buyerTaxId').value.trim().toUpperCase(), true);
-    if (bp && !confirmSoft(`買方${bp}，仍要產生嗎？`)) return;
+  // ===== 匯出共用 =====
+  const baseName = () => {
+    const who = ($('buyerName').value.trim() || '折讓單').replace(/[\\/:*?"<>|]/g, '');
+    const d = $('notaDate').value.replace(/-/g, '');
+    return `折讓單_${who}${d ? '_' + d : ''}`;
+  };
+  const inApp = () => /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent);
 
-    btn.disabled = true;
-    const old = btn.textContent;
-    btn.textContent = '⏳ PDF 產生中…';
-    const host = $('renderHost');
-    try {
-      if (document.fonts && document.fonts.ready) await document.fonts.ready;
-      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-      const pages = pagesFor(+$('copyType').value);
-      for (let i = 0; i < pages.length; i++) {
-        host.innerHTML = buildA4(...pages[i]);
-        const el = host.firstElementChild;
-        await new Promise(r => setTimeout(r, 120));
-        const canvas = await html2canvas(el, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, windowWidth: 1200 });
-        if (i > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
-      }
-      const who = ($('buyerName').value.trim() || '折讓單').replace(/[\\/:*?"<>|]/g, '');
-      const d = $('notaDate').value.replace(/-/g, '');
-      const fname = `折讓單_${who}${d ? '_' + d : ''}.pdf`;
-      const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent);
-      if (inApp) {
-        // LINE／FB 內建瀏覽器常擋下載，改開新分頁顯示 PDF，再用「分享」或「列印」
-        const url = URL.createObjectURL(pdf.output('blob'));
-        location.href = url;
-        flash('若沒有自動下載，請點右上角用 Safari／Chrome 開啟');
-      } else {
-        pdf.save(fname);
-      }
-    } catch (e) {
-      console.error(e);
-      flash('PDF 產生失敗，請再試一次');
-    } finally {
-      host.innerHTML = '';
-      btn.disabled = false;
-      btn.textContent = old;
-    }
+  // 檢查買方編號，有問題時要再按一次才繼續
+  function checkBeforeExport() {
+    const bp = idProblem($('buyerTaxId').value.trim().toUpperCase(), true);
+    return !(bp && !confirmSoft(`買方${bp}，仍要繼續嗎？`));
   }
-  $('pdfBtn').addEventListener('click', makePdf);
+
+  // 按鈕忙碌狀態
+  async function busy(btn, label, fn) {
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = '⏳ ' + label;
+    try { await fn(); }
+    catch (e) { console.error(e); flash('產生失敗，請再試一次'); }
+    finally { $('renderHost').innerHTML = ''; btn.disabled = false; btn.textContent = old; }
+  }
+
+  // 把每張 A4 畫成 canvas
+  async function renderCanvases() {
+    if (!window.html2canvas) throw new Error('html2canvas 未載入');
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const host = $('renderHost');
+    const out = [];
+    for (const pg of pagesFor(+$('copyType').value)) {
+      host.innerHTML = buildA4(...pg);
+      await new Promise(r => setTimeout(r, 120));
+      out.push(await html2canvas(host.firstElementChild, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, windowWidth: 1200 }));
+    }
+    host.innerHTML = '';
+    return out;
+  }
+  async function buildPdfBlob() {
+    if (!window.jspdf) throw new Error('jsPDF 未載入');
+    const canvases = await renderCanvases();
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    canvases.forEach((c, i) => { if (i) pdf.addPage(); pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297); });
+    return pdf.output('blob');
+  }
+  const canvasBlob = c => new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+
+  // 下載檔案（LINE／FB 內建瀏覽器改成直接開啟）
+  function saveBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    if (inApp()) {
+      location.href = url;
+      flash('若沒有自動下載，請點右上角改用 Safari／Chrome 開啟');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  // ① 下載 PDF
+  $('pdfBtn').addEventListener('click', () => {
+    if (!checkBeforeExport()) return;
+    busy($('pdfBtn'), 'PDF 產生中…', async () => saveBlob(await buildPdfBlob(), baseName() + '.pdf'));
+  });
+
+  // ② 存成圖片（每張 A4 一張 JPG，手機可直接存到相簿）
+  $('imgBtn').addEventListener('click', () => {
+    if (!checkBeforeExport()) return;
+    busy($('imgBtn'), '圖片產生中…', async () => {
+      const cs = await renderCanvases();
+      for (let i = 0; i < cs.length; i++) {
+        const b = await canvasBlob(cs[i]);
+        saveBlob(b, `${baseName()}${cs.length > 1 ? '_第' + (i + 1) + '頁' : ''}.jpg`);
+        if (inApp()) break;
+        await new Promise(r => setTimeout(r, 400));
+      }
+    });
+  });
+
+  // ③ 分享（手機：直接傳到 LINE、Email、雲端硬碟…）
+  const canShareFiles = (() => {
+    try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] })); }
+    catch (e) { return false; }
+  })();
+  if (!canShareFiles) $('shareBtn').style.display = 'none';
+  $('shareBtn').addEventListener('click', () => {
+    if (!checkBeforeExport()) return;
+    busy($('shareBtn'), '準備分享…', async () => {
+      const file = new File([await buildPdfBlob()], baseName() + '.pdf', { type: 'application/pdf' });
+      try {
+        await navigator.share({ files: [file], title: baseName() });
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        saveBlob(file, file.name);
+      }
+    });
+  });
+
+  // ④ 匯出 Excel（CSV，Excel／Google 試算表都能開）
+  $('csvBtn').addEventListener('click', () => {
+    const V = id => $(id).value.trim();
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [];
+    lines.push(['營業人銷貨退回進貨退出或折讓證明單'].map(q).join(','));
+    lines.push(['折讓單日期', fmtDate(V('notaDate'), '/')].map(q).join(','));
+    lines.push(['賣方名稱', V('sellerName'), '賣方統編', V('sellerTaxId'), '賣方地址', V('sellerAddr')].map(q).join(','));
+    lines.push(['買方名稱', V('buyerName'), '買方統編／身分證', V('buyerTaxId').toUpperCase(), '買方地址', V('buyerAddr')].map(q).join(','));
+    lines.push('');
+    lines.push(['聯式', '發票日期', '發票號碼', '品名', '數量', '單價', '未稅金額', '營業稅額', '課稅別', '含稅金額'].map(q).join(','));
+    let ta = 0, tt = 0;
+    rows.forEach(r => {
+      const amt = Math.round(num(r.amt) || 0);
+      const tax = r.note === '應稅' ? Math.round(amt * 0.05) : 0;
+      if (!r.no && !r.item && !amt) return;
+      ta += amt; tt += tax;
+      const n = v => isNaN(num(v)) ? '' : num(v);
+      lines.push([r.type, fmtDate(r.date, '/'), (r.no || '').replace(/-/g, ''), r.item, n(r.qty), n(r.price), amt, tax, r.note, amt + tax].map(q).join(','));
+    });
+    lines.push(['', '', '', '合計', '', '', ta, tt, '', ta + tt].map(q).join(','));
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    saveBlob(blob, baseName() + '.csv');
+  });
 
   // ===== 直接列印（手機、電腦都可，走系統列印對話框）=====
   function doPrint() {
